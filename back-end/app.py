@@ -21,7 +21,7 @@ class CustomResNet34(torch.nn.Module):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = CustomResNet34(output_classes=2).to(device)
-model.load_state_dict(torch.load("custom_resnet34_best.pth", map_location=device))
+model.load_state_dict(torch.load("DogandCat_resnet34.pth", map_location=device))
 model.eval()
 
 # Chuẩn bị transform cho ảnh
@@ -38,13 +38,14 @@ def predict_image(image_path):
     with torch.no_grad():
         output = model(image)
         _, predicted = torch.max(output, 1)
-    return "Cat" if predicted.item() == 0 else "Dog"
+    return predicted.item()  # Trả về 0 hoặc 1
 
 # API chính: upload ảnh và trả về kết quả
 @app.route("/predict", methods=["POST"])
 def predict():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded!"}), 400
+    
     file = request.files["file"]
     if file.filename == "":
         return jsonify({"error": "No file selected!"}), 400
@@ -55,7 +56,9 @@ def predict():
     # Dự đoán nhãn
     label = predict_image(file_path)
     os.remove(file_path)  # Xóa file sau khi xử lý
-    return jsonify({"label": label})
+    
+    label_str = "cat" if label == 0 else "dog"
+    return jsonify({"label": label_str})  # Trả về nhãn dạng chuỗi
 
 # Chạy ứng dụng Flask
 if __name__ == "__main__":
